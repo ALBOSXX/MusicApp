@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="current_layout_tag" type="id" />
+    <item name="image_msg_id" type="id" />
+    <item name="search_inited" type="id" />
+</resources>

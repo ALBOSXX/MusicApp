@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#020403" />
+        </shape>
+    </item>
+
+
+    <item android:top="8dp" android:left="8dp" android:right="8dp" android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <gradient android:angle="270" android:startColor="#0B1A12" android:centerColor="#050B07" android:endColor="#030604" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+
+
+    <item android:top="8dp" android:left="8dp" android:right="8dp" android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <gradient android:type="radial" android:centerX="0.5" android:centerY="0.2"
+                android:gradientRadius="75%p" android:centerColor="#2233FF77" android:endColor="#00000000" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+
+
+    <item android:drawable="@drawable/bg_grid_horizon" android:gravity="bottom|fill_horizontal"
+        android:height="230dp" android:left="16dp" android:right="16dp" android:bottom="16dp" />
+
+
+    <item android:top="8dp" android:left="8dp" android:right="8dp" android:bottom="8dp">
+        <shape android:shape="rectangle">
+            <stroke android:width="1.5dp" android:color="#8033FF77" />
+            <corners android:radius="28dp" />
+        </shape>
+    </item>
+    <item android:top="10dp" android:left="10dp" android:right="10dp" android:bottom="10dp">
+        <shape android:shape="rectangle">
+            <stroke android:width="2dp" android:color="#2633FF77" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <item android:top="13dp" android:left="13dp" android:right="13dp" android:bottom="13dp">
+        <shape android:shape="rectangle">
+            <stroke android:width="1dp" android:color="#1F6B3A" />
+            <corners android:radius="23dp" />
+        </shape>
+    </item>
+</layer-list>
