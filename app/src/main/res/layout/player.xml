@@ -6,9 +6,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_player_body"
-    android:padding="28dp">
+    android:padding="20dp">
 
-
+    <!-- ===== Шапка ===== -->
     <LinearLayout
         android:id="@+id/topBar"
         android:layout_width="0dp"
@@ -16,18 +16,17 @@
         android:background="@drawable/bg_title_bar"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="4dp"
+        android:paddingBottom="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:background="@drawable/bg_retro_button"
-            android:contentDescription="Назад"
-            android:padding="7dp"
+            android:padding="8dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_retro_prev"
             android:tint="@color/icon_tint_btn" />
@@ -39,35 +38,32 @@
             android:ellipsize="end"
             android:fontFamily="monospace"
             android:letterSpacing="0.12"
-            android:shadowColor="#33FF77"
-            android:shadowRadius="6"
             android:singleLine="true"
             android:text="D-PLAYER 2.81 // ミュージック"
             android:textAlignment="center"
-            android:textColor="#7CFFA3"
+            android:textColor="#C9D1D6"
             android:textSize="12sp"
             android:textStyle="bold" />
 
         <ImageButton
             android:id="@+id/btnSettings"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:background="@drawable/bg_retro_button"
-            android:padding="7dp"
+            android:padding="8dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_retro_next"
             android:tint="@color/icon_tint_btn"
             android:visibility="invisible" />
     </LinearLayout>
 
-
+    <!-- ===== Диск. Фон не вращается, крутится только playerPfp ===== -->
     <FrameLayout
         android:id="@+id/playerPfpFrame"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginVertical="12dp"
-        android:background="@drawable/bg_cd_frame"
-        android:padding="18dp"
+        android:padding="8dp"
         app:layout_constraintBottom_toTopOf="@id/lcdDisplay"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -82,7 +78,7 @@
             android:src="@drawable/ic_retro_cd" />
     </FrameLayout>
 
-
+    <!-- ===== Экран ===== -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/lcdDisplay"
         android:layout_width="0dp"
@@ -100,10 +96,8 @@
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:letterSpacing="0.1"
-            android:shadowColor="#33FF77"
-            android:shadowRadius="4"
             android:text="STEREO  320 KBPS  44.1 KHZ"
-            android:textColor="#2BE866"
+            android:textColor="#3F8F5A"
             android:textSize="10sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -137,7 +131,7 @@
             android:fontFamily="monospace"
             android:letterSpacing="0.06"
             android:text="Crazy Town  [2000]"
-            android:textColor="#1FB84F"
+            android:textColor="#4E9468"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -316,8 +310,6 @@
             android:fontFamily="monospace"
             android:paddingHorizontal="10dp"
             android:paddingVertical="5dp"
-            android:shadowColor="#5CFF8F"
-            android:shadowRadius="6"
             android:text="01:42"
             android:textColor="#7CFFA3"
             android:textSize="15sp"
@@ -351,7 +343,7 @@
             android:paddingHorizontal="10dp"
             android:paddingVertical="5dp"
             android:text="03:36"
-            android:textColor="#1FB84F"
+            android:textColor="#5E8F72"
             android:textSize="15sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -378,7 +370,7 @@
             android:fontFamily="monospace"
             android:letterSpacing="0.2"
             android:text="VOL"
-            android:textColor="#1FB84F"
+            android:textColor="#66737B"
             android:textSize="11sp"
             android:textStyle="bold" />
 
@@ -397,7 +389,7 @@
             android:thumb="@drawable/seekbar_thumb" />
     </LinearLayout>
 
-
+    <!-- ===== Кнопки ===== -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="0dp"
@@ -433,7 +425,7 @@
                 android:fontFamily="monospace"
                 android:letterSpacing="0.2"
                 android:text="PREV"
-                android:textColor="#1F8F4B"
+                android:textColor="#66737B"
                 android:textSize="9sp" />
         </LinearLayout>
 
@@ -450,7 +442,7 @@
                 android:layout_width="76dp"
                 android:layout_height="76dp"
                 android:background="@drawable/bg_retro_button_play"
-
+                android:contentDescription="Играть"
                 android:padding="18dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_retro_play"
@@ -463,7 +455,7 @@
                 android:fontFamily="monospace"
                 android:letterSpacing="0.2"
                 android:text="PLAY"
-                android:textColor="#1F8F4B"
+                android:textColor="#66737B"
                 android:textSize="9sp" />
         </LinearLayout>
 
@@ -493,7 +485,7 @@
                 android:fontFamily="monospace"
                 android:letterSpacing="0.2"
                 android:text="NEXT"
-                android:textColor="#1F8F4B"
+                android:textColor="#66737B"
                 android:textSize="9sp" />
         </LinearLayout>
 

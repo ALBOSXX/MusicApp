@@ -1,6 +1,8 @@
 package com.music.musicapp
 
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
@@ -12,17 +14,23 @@ import android.media.MediaPlayer
 import android.media.browse.MediaBrowser
 import android.net.Uri
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.LinearInterpolator
 import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,13 +62,16 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import kotlin.text.toFloat
 
-class MainActivity : ComponentActivity() {
+class MainActivity() : ComponentActivity() {
 
     enum class AnimDirection {
         FORWARD,
         BACKWARD,
         NONE
     }
+    var animator : ObjectAnimator? = null
+
+    var currentTimer: CountDownTimer? = null
 
     private var isAnimating = false
 
@@ -285,6 +296,23 @@ class MainActivity : ComponentActivity() {
 
     }
 
+
+    fun startRotation(view: View) {
+        if(animator == null) {
+            animator = ObjectAnimator.ofFloat(view, View.ROTATION, 0f, 360f).apply {
+                duration = 2000L
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.RESTART
+                interpolator = LinearInterpolator()
+            }
+        }
+        animator?.start()
+    }
+
+    fun stopRotation(){
+        animator?.pause()
+    }
+
     private fun recycler(direction: AnimDirection){
         showScreen(R.layout.music_recycler, direction)
 
@@ -349,6 +377,12 @@ class MainActivity : ComponentActivity() {
         musicRecyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
     }
 
+    fun formatTime(millis: Long): String {
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
+        return String.format("%d:%02d", minutes, seconds)
+    }
+
     private fun player(index : Int , item : MusicItem, direction: AnimDirection){
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -384,18 +418,77 @@ class MainActivity : ComponentActivity() {
 
         root.requestApplyInsets()
 
+        val tvCurrentTime = findViewById<TextView>(R.id.tvCurrentTime)
+
+        val songSeekBar = findViewById<SeekBar>(R.id.songSeekBar)
+
+        songSeekBar.max = item.duration.toInt()
+
+        fun startTimerFrom(durationMillis: Long) {
+            currentTimer?.cancel()
+
+            currentTimer = object : CountDownTimer(durationMillis, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+
+                    val alreadyMillis = item.duration - millisUntilFinished
+
+                    tvCurrentTime.text = formatTime(alreadyMillis)
+                    songSeekBar.progress = alreadyMillis.toInt()
+                }
+
+                override fun onFinish() {
+                    tvCurrentTime.text = formatTime(item.duration)
+                }
+            }.start()
+        }
+        startTimerFrom(item.duration)
+
+
+
+        songSeekBar.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (fromUser) {
+
+                        tvCurrentTime.text = formatTime(progress.toLong())
+                    }
+                }
+
+                override fun onStartTrackingTouch(seek: SeekBar) {
+                    currentTimer?.cancel()
+                }
+
+                override fun onStopTrackingTouch(seek: SeekBar) {
+
+                    mediaPlayer?.seekTo(seek.progress)
+
+
+                    val remainingTime = item.duration - seek.progress
+
+
+                    startTimerFrom(remainingTime)
+                }
+            }
+        )
+
         val totalDuration = findViewById<TextView>(R.id.tvTotalDuration)
 
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(item.duration);
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(item.duration) % 60;
-
-
-        val timeFormatted = String.format("%d:%02d", minutes, seconds);
-        totalDuration.text = timeFormatted
+        totalDuration.text = formatTime(item.duration)
 
         val play = findViewById<ImageButton>(R.id.btnPlay)
         play.setImageResource(R.drawable.ic_retro_stop)
         val tvAudioInfo = findViewById<TextView>(R.id.tvAudioInfo)
+        val btnBack = findViewById<ImageButton>(R.id.btnBack)
+        btnBack.setOnClickListener {
+            recycler(AnimDirection.BACKWARD)
+        }
+
+        onBackPressedDispatcher.addCallback(object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                recycler(AnimDirection.BACKWARD)
+            }
+
+        })
 
         val bitrateKbps = item.bitrate / 1000
         val bitrateText = "$bitrateKbps kbps"
@@ -414,14 +507,20 @@ class MainActivity : ComponentActivity() {
         val tvSongTitle = findViewById<TextView>(R.id.tvSongTitle)
         tvSongTitle.text = "$index. ${item.name}"
 
+        val playerPfp = findViewById<ImageView>(R.id.playerPfp)
+        startRotation(playerPfp)
+
         play.setOnClickListener {
             if (playingItemUri == item.uri) {
                 if(mediaPlayer?.isPlaying == true) {
                     play.setImageResource(R.drawable.ic_retro_play)
-
+                    stopRotation()
                     mediaPlayer?.pause()
+
                 } else  {
                     play.setImageResource(R.drawable.ic_retro_stop)
+                    startRotation(playerPfp)
+                    currentTimer?.start()
                     mediaPlayer?.start()
                 }
 
@@ -431,6 +530,7 @@ class MainActivity : ComponentActivity() {
 
                 mediaPlayer?.stop()
                 mediaPlayer?.release()
+                stopRotation()
 
 
                 mediaPlayer = MediaPlayer().apply {
@@ -452,6 +552,7 @@ class MainActivity : ComponentActivity() {
 
                     }
                 }
+                startRotation(playerPfp)
 
 
                 playingItemUri = item.uri
