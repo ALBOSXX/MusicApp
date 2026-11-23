@@ -1,27 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingHorizontal="16dp"
-    android:paddingVertical="4dp">
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="5dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="1dp"
+    app:rippleColor="#1A000000"
+    app:strokeColor="#EBEFF5"
+    app:strokeWidth="1dp">
 
-
-
-
-    <TextView
-        android:id="@+id/nameLabel"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="12dp"
-        android:textColor="#2D3135"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:padding="12dp">
 
 
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/coverImageView"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            android:background="#E8EEF5"
+            android:scaleType="centerCrop"
+            android:src="@android:drawable/ic_media_play"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium" />
 
-</FrameLayout>
+
+        <TextView
+            android:id="@+id/nameLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#1A1D1F"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/artistLabel"
+            app:layout_constraintEnd_toStartOf="@+id/durationLabel"
+            app:layout_constraintStart_toEndOf="@+id/coverImageView"
+            app:layout_constraintTop_toTopOf="@+id/coverImageView"
+            app:layout_constraintVertical_chainStyle="packed"
+            tools:text="Blinding Lights" />
+
+
+        <TextView
+            android:id="@+id/artistLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="3dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#6F767E"
+            android:textSize="13sp"
+            app:layout_constraintBottom_toBottomOf="@+id/coverImageView"
+            app:layout_constraintEnd_toStartOf="@+id/durationLabel"
+            app:layout_constraintStart_toEndOf="@+id/coverImageView"
+            app:layout_constraintTop_toBottomOf="@+id/nameLabel"
+            tools:text="The Weeknd" />
+
+
+        <TextView
+            android:id="@+id/durationLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:textColor="#9CA3AF"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/moreButton"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="03:20" />
+
+
+        <ImageButton
+            android:id="@+id/moreButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_more"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#8E969E" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

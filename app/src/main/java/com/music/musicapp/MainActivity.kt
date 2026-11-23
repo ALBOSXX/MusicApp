@@ -11,6 +11,7 @@ import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
+import android.media.audiofx.Visualizer
 import android.media.browse.MediaBrowser
 import android.net.Uri
 import android.os.Bundle
@@ -73,13 +74,19 @@ class MainActivity() : ComponentActivity() {
 
     var currentTimer: CountDownTimer? = null
 
+    var visualizer: Visualizer? = null
+
     private var isAnimating = false
 
     private val screenCache = HashMap<Int, View>()
 
+    private var mediaPlayer: MediaPlayer? = null
+    private var playingItemUri: Uri? = null
+
     private fun Int.dpToPx(context: Context): Int {
         return (this * context.resources.displayMetrics.density).toInt()
     }
+
 
     private data class AudioMetadata(val sampleRate: Int, val bitrate: Int, val channels: Int)
 
@@ -198,9 +205,9 @@ class MainActivity() : ComponentActivity() {
                     )
                 )
 
-                if (mediaList.size >= 100) {
-                    break
-                }
+//                if (mediaList.size >= 100) {
+//                    break
+//                }
             }
         }
         return mediaList
@@ -273,8 +280,6 @@ class MainActivity() : ComponentActivity() {
         return newView
     }
 
-    private var mediaPlayer: MediaPlayer? = null
-    private var playingItemUri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -313,6 +318,12 @@ class MainActivity() : ComponentActivity() {
         animator?.pause()
     }
 
+    fun releaseVisualizer() {
+        visualizer?.enabled = false
+        visualizer?.release()
+        visualizer = null
+    }
+
     private fun recycler(direction: AnimDirection){
         showScreen(R.layout.music_recycler, direction)
 
@@ -332,6 +343,8 @@ class MainActivity() : ComponentActivity() {
             insets
         }
 
+        releaseVisualizer()
+
 
         val perms = arrayListOf<String>()
         if(ContextCompat.checkSelfPermission(
@@ -348,6 +361,13 @@ class MainActivity() : ComponentActivity() {
             != PackageManager.PERMISSION_GRANTED
         ){
             perms.add(Manifest.permission.READ_MEDIA_AUDIO)
+        }
+        if(ContextCompat.checkSelfPermission(
+                this@MainActivity,
+                Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ){
+            perms.add(Manifest.permission.RECORD_AUDIO)
         }
 
         val array: Array<String> = perms.toTypedArray()
@@ -382,6 +402,8 @@ class MainActivity() : ComponentActivity() {
         val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
         return String.format("%d:%02d", minutes, seconds)
     }
+
+
 
     private fun player(index : Int , item : MusicItem, direction: AnimDirection){
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -444,6 +466,68 @@ class MainActivity() : ComponentActivity() {
         startTimerFrom(item.duration)
 
 
+        val vizBars = listOf<View>(
+            findViewById(R.id.viz1), findViewById(R.id.viz2), findViewById(R.id.viz3), findViewById(R.id.viz4),
+            findViewById(R.id.viz5), findViewById(R.id.viz6), findViewById(R.id.viz7), findViewById(R.id.viz8),
+            findViewById(R.id.viz9), findViewById(R.id.viz10), findViewById(R.id.viz11), findViewById(R.id.viz12),
+            findViewById(R.id.viz13), findViewById(R.id.viz14), findViewById(R.id.viz15), findViewById(R.id.viz16),
+            findViewById(R.id.viz17), findViewById(R.id.viz18), findViewById(R.id.viz19), findViewById(R.id.viz20)
+        )
+
+        fun updateVisualizerBars(fft: ByteArray) {
+
+
+            vizBars.forEachIndexed { index, view ->
+
+                val fftIndex = index * 2 + 2
+                if (fftIndex < fft.size) {
+                    val rfk = fft[fftIndex].toInt()
+                    val ifk = fft[fftIndex + 1].toInt()
+                    val magnitude = (Math.hypot(rfk.toDouble(), ifk.toDouble()) / 128.0).toFloat()
+
+
+                    val maxHeightPx = 32.dpToPx(this@MainActivity)
+                    val minHeightPx = 6.dpToPx(this@MainActivity)
+
+                    var newHeight = (minHeightPx + (maxHeightPx - minHeightPx) * magnitude).toInt()
+                    newHeight = newHeight.coerceIn(minHeightPx, maxHeightPx)
+
+
+                    view.post {
+                        val params = view.layoutParams
+                        params.height = newHeight
+                        view.layoutParams = params
+                    }
+                }
+            }
+        }
+
+        fun setupVisualizer(audioSessionId: Int) {
+            try {
+                visualizer = Visualizer(audioSessionId).apply {
+
+                    captureSize = Visualizer.getCaptureSizeRange()[1]
+
+                    setDataCaptureListener(object : Visualizer.OnDataCaptureListener {
+                        override fun onWaveFormDataCapture(visualizer: Visualizer?, waveform: ByteArray?, samplingRate: Int) {
+
+                        }
+
+                        override fun onFftDataCapture(visualizer: Visualizer?, fft: ByteArray?, samplingRate: Int) {
+                            fft?.let { updateVisualizerBars(it) }
+                        }
+                    }, Visualizer.getMaxCaptureRate() / 2, false, true)
+
+                    enabled = true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+
+
+
 
         songSeekBar.setOnSeekBarChangeListener(
             object : SeekBar.OnSeekBarChangeListener {
@@ -474,6 +558,7 @@ class MainActivity() : ComponentActivity() {
         val totalDuration = findViewById<TextView>(R.id.tvTotalDuration)
 
         totalDuration.text = formatTime(item.duration)
+
 
         val play = findViewById<ImageButton>(R.id.btnPlay)
         play.setImageResource(R.drawable.ic_retro_stop)
@@ -509,6 +594,8 @@ class MainActivity() : ComponentActivity() {
 
         val playerPfp = findViewById<ImageView>(R.id.playerPfp)
         startRotation(playerPfp)
+
+
 
         play.setOnClickListener {
             if (playingItemUri == item.uri) {
@@ -601,7 +688,11 @@ class MainActivity() : ComponentActivity() {
 
         }
 
+        setupVisualizer(mediaPlayer?.audioSessionId ?: 1)
+
     }
+
+
 
 
 }
