@@ -82,10 +82,14 @@ class MainActivity() : ComponentActivity() {
 
     private var isAnimating = false
     var mediaList : MutableList<MusicItem>? = null
+    var properList : MutableList<MusicItem>? = null
 
     private val screenCache = HashMap<Int, View>()
 
     private var mediaPlayer: MediaPlayer? = null
+    var isLoadingMore = false
+    var previousTotalItemCount = 0
+    val visibleThreshold = 30
     private var playingItemUri: Uri? = null
 
     private fun Int.dpToPx(context: Context): Int {
@@ -397,8 +401,9 @@ class MainActivity() : ComponentActivity() {
 
 
 
-        if(mediaList.isNullOrEmpty()){
-            mediaList = getMusic(applicationContext, null)
+        if(mediaList.isNullOrEmpty() || properList.isNullOrEmpty()){
+            properList = getMusic(applicationContext, null)
+            mediaList = properList
         }
 
 
@@ -413,34 +418,35 @@ class MainActivity() : ComponentActivity() {
         val manager = LinearLayoutManager(this@MainActivity)
         musicRecyclerView.adapter = mediaAdapter
         musicRecyclerView.layoutManager = manager
-        var alreadyCalledForMoreElements = false
-        var previousTotalItemCount = 0
+
 
         musicRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-
                 if (dy <= 0) return
 
                 val visibleItemCount = manager.childCount
                 val totalItemCount = manager.itemCount
                 val firstVisibleItemPosition = manager.findFirstVisibleItemPosition()
 
-                val visibleThreshold = 30
+                if (totalItemCount < previousTotalItemCount) {
+                    previousTotalItemCount = totalItemCount
+                }
 
+                val nearEnd = (visibleItemCount + firstVisibleItemPosition + visibleThreshold) >= totalItemCount
 
-                val nearEnd = (visibleItemCount + firstVisibleItemPosition) >= totalItemCount - visibleThreshold
+                if (!isLoadingMore && nearEnd && totalItemCount > 0) {
+                    val currentList = properList ?: return
+                    val startIndex = currentList.size
+                    val newItems = getMusic(applicationContext, startIndex)
 
-
-                if (!alreadyCalledForMoreElements && nearEnd) {
-
-                    if (totalItemCount > previousTotalItemCount) {
-                        alreadyCalledForMoreElements = true
+                    if (newItems.isNotEmpty()) {
+                        isLoadingMore = true
                         previousTotalItemCount = totalItemCount
-
-                        Log.d("called", "for media total items $totalItemCount")
-
-                        mediaList?.addAll(getMusic(applicationContext, manager.itemCount))
+                        currentList.addAll(newItems)
+                        mediaList = currentList
+                        mediaAdapter.notifyDataSetChanged()
+                        isLoadingMore = false
                     }
                 }
             }
@@ -449,14 +455,14 @@ class MainActivity() : ComponentActivity() {
         val searchEditText = findViewById<EditText>(R.id.searchEditText)
         searchEditText.addTextChangedListener(object : TextWatcher {
 
-            public override fun afterTextChanged(s : Editable) {}
+            override fun afterTextChanged(s : Editable) {}
             override fun beforeTextChanged(
                 p0: CharSequence?,
                 p1: Int,
                 p2: Int,
                 p3: Int
             ) {
-                TODO("Not yet implemented")
+
             }
 
             override fun onTextChanged(
@@ -465,7 +471,20 @@ class MainActivity() : ComponentActivity() {
                 p2: Int,
                 p3: Int
             ) {
-                TODO("Not yet implemented")
+                val sourceList = properList.orEmpty()
+                val query = p0?.toString().orEmpty()
+
+                val filteredList = if (query.isEmpty()) {
+                    sourceList.toMutableList()
+                } else {
+                    sourceList.filter { item ->
+                        item.name?.contains(query, ignoreCase = true) == true
+                    }.toMutableList()
+                }
+
+                mediaList = filteredList
+
+                mediaAdapter.notifyDataSetChanged()
             }
 
         });
