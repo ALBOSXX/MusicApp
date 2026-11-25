@@ -17,12 +17,15 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.provider.MediaStore
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -52,6 +55,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isNotEmpty
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
+import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -77,6 +81,7 @@ class MainActivity() : ComponentActivity() {
     var visualizer: Visualizer? = null
 
     private var isAnimating = false
+    var mediaList : MutableList<MusicItem>? = null
 
     private val screenCache = HashMap<Int, View>()
 
@@ -146,7 +151,7 @@ class MainActivity() : ComponentActivity() {
         return AudioMetadata(sampleRate, bitrate, channels)
     }
 
-    fun getMusic(context: Context): List<MusicItem> {
+    fun getMusic(context: Context, offset : Int?): MutableList<MusicItem> {
         val mediaList = mutableListOf<MusicItem>()
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
@@ -163,12 +168,26 @@ class MainActivity() : ComponentActivity() {
 
         val sortOrder = "${MediaStore.Files.FileColumns.DATE_ADDED} DESC"
 
+
+        val queryArgs = android.os.Bundle().apply {
+            putString(android.content.ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+            putStringArray(
+                android.content.ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS,
+                selectionArgs
+            )
+            putString(android.content.ContentResolver.QUERY_ARG_SQL_SORT_ORDER, sortOrder)
+            putInt(android.content.ContentResolver.QUERY_ARG_LIMIT, 30)
+            if(offset != null) {
+                putInt(android.content.ContentResolver.QUERY_ARG_OFFSET, offset)
+            }
+        }
+
+
         context.contentResolver.query(
             MediaStore.Files.getContentUri("external"),
             projection,
-            selection,
-            selectionArgs,
-            sortOrder
+            queryArgs,
+            null
         )?.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
@@ -204,13 +223,9 @@ class MainActivity() : ComponentActivity() {
                         channels = audioMeta.channels
                     )
                 )
-
-//                if (mediaList.size >= 100) {
-//                    break
-//                }
             }
         }
-        return mediaList
+        return mediaList.toMutableList()
     }
 
 
@@ -328,6 +343,7 @@ class MainActivity() : ComponentActivity() {
         showScreen(R.layout.music_recycler, direction)
 
         val musicRecyclerView : RecyclerView = findViewById(R.id.musicRecyclerView)
+        val topBar : TextView = findViewById(R.id.topBarRecycler)
         val root = findViewById<LinearLayout>(R.id.main)
 
 
@@ -336,7 +352,7 @@ class MainActivity() : ComponentActivity() {
                 WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
             )
 
-            musicRecyclerView.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            topBar.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 topMargin = bars.top + 8
             }
 
@@ -381,20 +397,78 @@ class MainActivity() : ComponentActivity() {
 
 
 
+        if(mediaList.isNullOrEmpty()){
+            mediaList = getMusic(applicationContext, null)
+        }
 
-        val list = getMusic(applicationContext)
 
 
-
-        val mediaAdapter = MusicAdapter(list.toMutableList(), object : OnItemClickListener{
+        val mediaAdapter = MusicAdapter(mediaList!!.toMutableList(), object : OnItemClickListener{
             override fun onItemClick(item: Any) {
                 item as MusicItem
-                player(list.indexOf(item), item, AnimDirection.FORWARD)
+                player(mediaList!!.indexOf(item), item, AnimDirection.FORWARD)
             }
 
         })
+        val manager = LinearLayoutManager(this@MainActivity)
         musicRecyclerView.adapter = mediaAdapter
-        musicRecyclerView.layoutManager = LinearLayoutManager(this@MainActivity)
+        musicRecyclerView.layoutManager = manager
+        var alreadyCalledForMoreElements = false
+        var previousTotalItemCount = 0
+
+        musicRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                if (dy <= 0) return
+
+                val visibleItemCount = manager.childCount
+                val totalItemCount = manager.itemCount
+                val firstVisibleItemPosition = manager.findFirstVisibleItemPosition()
+
+                val visibleThreshold = 30
+
+
+                val nearEnd = (visibleItemCount + firstVisibleItemPosition) >= totalItemCount - visibleThreshold
+
+
+                if (!alreadyCalledForMoreElements && nearEnd) {
+
+                    if (totalItemCount > previousTotalItemCount) {
+                        alreadyCalledForMoreElements = true
+                        previousTotalItemCount = totalItemCount
+
+                        Log.d("called", "for media total items $totalItemCount")
+
+                        mediaList?.addAll(getMusic(applicationContext, manager.itemCount))
+                    }
+                }
+            }
+        })
+
+        val searchEditText = findViewById<EditText>(R.id.searchEditText)
+        searchEditText.addTextChangedListener(object : TextWatcher {
+
+            public override fun afterTextChanged(s : Editable) {}
+            override fun beforeTextChanged(
+                p0: CharSequence?,
+                p1: Int,
+                p2: Int,
+                p3: Int
+            ) {
+                TODO("Not yet implemented")
+            }
+
+            override fun onTextChanged(
+                p0: CharSequence?,
+                p1: Int,
+                p2: Int,
+                p3: Int
+            ) {
+                TODO("Not yet implemented")
+            }
+
+        });
     }
 
     fun formatTime(millis: Long): String {
@@ -424,7 +498,7 @@ class MainActivity() : ComponentActivity() {
             val navBars = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
             val isImeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
 
-            root.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            topbar.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 topMargin = bars.top + 8
             }
 
@@ -546,11 +620,14 @@ class MainActivity() : ComponentActivity() {
 
                     mediaPlayer?.seekTo(seek.progress)
 
+                    if(mediaPlayer?.isPlaying == true) {
 
-                    val remainingTime = item.duration - seek.progress
+
+                        val remainingTime = item.duration - seek.progress
 
 
-                    startTimerFrom(remainingTime)
+                        startTimerFrom(remainingTime)
+                    }
                 }
             }
         )
@@ -602,6 +679,7 @@ class MainActivity() : ComponentActivity() {
                 if(mediaPlayer?.isPlaying == true) {
                     play.setImageResource(R.drawable.ic_retro_play)
                     stopRotation()
+                    currentTimer?.cancel()
                     mediaPlayer?.pause()
 
                 } else  {
@@ -609,6 +687,10 @@ class MainActivity() : ComponentActivity() {
                     startRotation(playerPfp)
                     currentTimer?.start()
                     mediaPlayer?.start()
+                    val remainingTime = item.duration - songSeekBar.progress
+
+
+                    startTimerFrom(remainingTime)
                 }
 
 
